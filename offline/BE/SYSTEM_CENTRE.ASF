@@ -1,0 +1,24 @@
+-- 
+--  FILE          : SYSTEM_CENTRE 
+--  FIRST EDITING : JUNE 1, 2004
+--  BY            : DATA GROUP, BEIJING
+--  VERSION       : BJ_OPS_1.0
+--
+--
+--  Mod Date   | Responsible | Brief Comments on Mod Contents 
+---------------|-------------|------------------------------------
+--
+--
+-- ~50 km south of Beijing
+--
+SYSTEM_CENTRE            |  392955N1163506E
+-- 
+EXT_RADAR_SYSTEM_CENTRE  |  392955N1163506E
+--
+-- half great and small earth axis:
+--
+RDF_HALF_GREAT_AXIS  |  6378.137KM 
+RDF_HALF_SMALL_AXIS  |  6356.7523142KM 
+-- 
+HMI_SEGMENT_LENGTH_IN_SURVEILLANCE  |  50NM 
+HMI_SEGMENT_LENGTH_OUT_SURVEILLANCE | 148NM 

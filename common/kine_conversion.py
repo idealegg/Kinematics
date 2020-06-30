@@ -1,0 +1,5 @@
+from common.kinematics import NM_TO_KM
+
+
+KNOTS_TO_KM_PER_HOUR = NM_TO_KM
+KM_PER_HOUR_TO_KNOTS = 1.0/KNOTS_TO_KM_PER_HOUR
