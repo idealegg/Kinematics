@@ -13,7 +13,7 @@ class CharPoint(object):
         self.char_point = {'DEFINITIONS': {}}
         self.inited = False
         self.parse_src()
-        print(self.char_point)
+        #print(self.char_point)
 
     def parse_src(self):
         fd = open(self.src_path)

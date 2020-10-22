@@ -7,12 +7,12 @@ import os
 class Kinematics(object):
     def __init__(self):
         self.dll_dir = 'DLL'
-        self.win32_dir = r'C:\Windows\System32'
-        self.ntdll_path = os.path.join(self.win32_dir, 'ntdll.dll')
-        self.kernel32_path = os.path.join(self.win32_dir, 'kernel32.dll')
-        self.kernelbase_path = os.path.join(self.win32_dir, 'KernelBase.dll')
-        self.app_help_path = os.path.join(self.win32_dir, 'apphelp.dll')
-        self.msvcrt_path = os.path.join(self.win32_dir, 'msvcrt.dll')
+        ##self.win32_dir = r'C:\Windows\System32'
+        ##self.ntdll_path = os.path.join(self.win32_dir, 'ntdll.dll')
+        ##self.kernel32_path = os.path.join(self.win32_dir, 'kernel32.dll')
+        ##self.kernelbase_path = os.path.join(self.win32_dir, 'KernelBase.dll')
+        ##self.app_help_path = os.path.join(self.win32_dir, 'apphelp.dll')
+        ##self.msvcrt_path = os.path.join(self.win32_dir, 'msvcrt.dll')
         self.kineC_path = os.path.join(self.dll_dir, 'libC_kineC.dll')
         self.is_loaded = False
         self.is_earth_defined = False
@@ -21,11 +21,11 @@ class Kinematics(object):
 
     def load_dll(self):
         if not self.is_loaded:
-            self.ntdll = WinDLL(self.ntdll_path)
-            self.kernel32 = WinDLL(self.kernel32_path)
-            self.kernelbase = WinDLL(self.kernelbase_path)
-            self.app_help = WinDLL(self.app_help_path)
-            self.msvcrt = WinDLL(self.msvcrt_path)
+            #self.ntdll = WinDLL(self.ntdll_path)
+            #self.kernel32 = WinDLL(self.kernel32_path)
+            #self.kernelbase = WinDLL(self.kernelbase_path)
+            #self.app_help = WinDLL(self.app_help_path)
+            #self.msvcrt = WinDLL(self.msvcrt_path)
             self.kineC = WinDLL(self.kineC_path)
             self.is_loaded = True
 
@@ -246,3 +246,14 @@ class Kinematics(object):
         exit_intersection = PolygonIntersectionT()
         ret = func(trajectory, polygon, pointer(exit_intersection))
         return exit_intersection, ret
+
+    def distance_on_the_great_circle(self, point_origin, point_dest, altitude):
+        func = self.kineC.DistanceOnTheGreatCircleStereo
+        func.argtypes = (POINTER(StereographicCoordinatesT),
+                         POINTER(StereographicCoordinatesT),
+                         POINTER(AltitudeT),
+                         POINTER(DistanceT))
+        dis = DistanceT()
+        func.restype = c_int
+        ret = func(pointer(point_origin), pointer(point_dest), pointer(altitude), pointer(dis))
+        return dis, ret

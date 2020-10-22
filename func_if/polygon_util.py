@@ -247,3 +247,6 @@ def compute_polygonic_volume_exit_point(trajectory, polygon_num=0):
         return "%s: %s" % ('compute_polygonic_volume_exit_point', ConvResultT[ret])
     print(exit_intersection)
     return ''
+
+def distance_on_the_great_circle(self, point_origin, point_dest):
+    return kine_dll.distance_on_the_great_circle(self, point_origin, point_dest)

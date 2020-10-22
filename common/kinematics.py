@@ -142,6 +142,8 @@ ConvResultT = {    0: "Ok",
 class AltitudeT(c_double):
     pass
 
+class DistanceT(c_double):
+    pass
 
 #  Type MeterAltitudeT defines an altitude which is expressed in metres
 class MeterAltitudeT(c_double):
