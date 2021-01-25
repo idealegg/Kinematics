@@ -37,6 +37,9 @@ K_2PI = c_double(K_PI.value * 2.0)
 K_PI_2 = c_double(M_PI_2)
 K_PI_4 = c_double(M_PI_4)
 
+TENTH_DEGREES_TO_DEGREES = 0.1
+
+
 def type_str(obj):
     return "%s" % obj.value
 

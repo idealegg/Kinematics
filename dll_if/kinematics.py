@@ -257,3 +257,36 @@ class Kinematics(object):
         func.restype = c_int
         ret = func(pointer(point_origin), pointer(point_dest), pointer(altitude), pointer(dis))
         return dis, ret
+
+    def heading_on_the_great_circle_origin(self, point_origin, point_dest):
+        func = self.kineC.HeadingOnTheGreatCircleOrigin
+        func.argtypes = (POINTER(GeographicCoordinateT),
+                         POINTER(GeographicCoordinateT),
+                         POINTER(c_double))
+        heading_deg = c_double()
+        func.restype = c_int
+        ret = func(pointer(point_origin), pointer(point_dest), pointer(heading_deg))
+        return heading_deg, ret
+
+    def point_on_the_great_circle_from_heading(self, point_origin, heading_deg, distance_nm, altitude_ft):
+        func = self.kineC.PointOnTheGreatCircleFromHeading
+        func.argtypes = (POINTER(GeographicCoordinateT),
+                         c_double,
+                         c_double,
+                         AltitudeT,
+                         POINTER(GeographicCoordinateT))
+        point_deg = GeographicCoordinateT()
+        func.restype = c_int
+        ret = func(pointer(point_origin), heading_deg, distance_nm, altitude_ft, pointer(point_deg))
+        return point_deg, ret
+
+    def projection_to_the_great_circle_geo(self, point_to_pro, point_origin, point_dest):
+        func = self.kineC.ProjectionToTheGreatCircleGeo
+        func.argtypes = (POINTER(GeographicCoordinateT),
+                         POINTER(GeographicCoordinateT),
+                         POINTER(GeographicCoordinateT),
+                         POINTER(GeographicCoordinateT))
+        projection = GeographicCoordinateT()
+        func.restype = c_int
+        ret = func(pointer(point_to_pro), pointer(point_origin), pointer(point_dest), pointer(projection))
+        return projection, ret

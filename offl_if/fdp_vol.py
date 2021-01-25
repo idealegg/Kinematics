@@ -15,6 +15,7 @@ class FdpVolume(object):
                  'MIL_AREA': {}, 'EUROCAT_T_AREA': {}, 'NON_SURVEILLANCE_TOWER': {}, 'FIR': {}}
         self.inited = False
         self.map_vol = {}
+        self.vol_in_sec_fir = {}
         self.parse_src()
         self.map_volume()
         #print ("fdp_vol: %s" % self.fdp_vol['VOLUME'])
@@ -86,6 +87,8 @@ class FdpVolume(object):
               res = re.search("^\s*\|\s*\|\s*([\w\s]+)", line)
               self.fdp_vol['SECTOR'][cur_sec]['vols'] = ' '.join([self.fdp_vol['SECTOR'][cur_sec]['vols'], res.group(1)])
               self.fdp_vol['SECTOR'][cur_sec]['vol_list'] = re.findall("\w+", self.fdp_vol['SECTOR'][cur_sec]['vols'])
+            for vol in self.fdp_vol['SECTOR'][cur_sec]['vol_list']:
+                self.vol_in_sec_fir[vol] = cur_sec
           elif cur_title in ('MIL_AREA', 'EUROCAT_T_AREA', 'NON_SURVEILLANCE_TOWER', 'FIR'):
             line = line.replace("+", ' ')
             res = re.search("^(\w+)\s*\|\s*([\w\s]+)", line)
@@ -98,6 +101,8 @@ class FdpVolume(object):
               res = re.search("^\s*\|\s*([\w\s]+)", line)
               self.fdp_vol[cur_title][cur_fir]['vols'] = ' '.join([self.fdp_vol[cur_title][cur_fir]['vols'], res.group(1)])
               self.fdp_vol[cur_title][cur_fir]['vol_list'] = re.findall("\w+", self.fdp_vol[cur_title][cur_fir]['vols'])
+            for vol in self.fdp_vol[cur_title][cur_fir]['vol_list']:
+                self.vol_in_sec_fir[vol] = cur_fir
       fd.close()
       self.inited = True
 

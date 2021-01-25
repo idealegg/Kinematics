@@ -4,6 +4,7 @@ from common.kine_polygon import *
 import common.parse_tools
 import dll_if.kinematics
 import pprint
+import math
 
 
 polygonData = PolygonDataArrayT()
@@ -22,6 +23,7 @@ segt_pro_buffer = None
 
 fv = None
 
+accuracy = { 'LO': 0.4, 'HI': 0.05}
 
 def convert_feet_2_metres(feet):
     return kine_dll.rational_altitude(feet * FEET_TO_METER.value)
@@ -55,6 +57,7 @@ def prepare_polygons_old(fdp_vol):
     global segt_buffer
     global segt_pro_buffer
     ps = fdp_vol.fdp_vol['POINTS']
+    arcs = fdp_vol.fdp_vol['ARCS']
     number_of_polygons = len(fdp_vol.map_vol)
     max_number_of_points = 0
     for i in range(number_of_polygons):
@@ -66,8 +69,24 @@ def prepare_polygons_old(fdp_vol):
         polygonData[i].number_of_points = len(vol['point_list'])
         polygonData[i].floor_plane = kine_dll.define_altitude_plane(get_plane_definition(polygonData[i].floor.value))
         polygonData[i].ceiling_plane = kine_dll.define_altitude_plane(get_plane_definition(polygonData[i].ceiling.value))
+        actual_number_of_points = 0
         for p_cnt in range(polygonData[i].number_of_points):
-            polygonPoints[i][p_cnt] = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[vol['point_list'][p_cnt]]))
+            item_name = vol['point_list'][p_cnt]
+            if item_name in ps:
+                polygonPoints[i][actual_number_of_points] = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[item_name]))
+                actual_number_of_points += 1
+            elif item_name in arcs:
+                if 'point_list' in arcs[item_name]:
+                    for p in arcs[item_name]['point_list']:
+                        polygonPoints[i][actual_number_of_points] = p
+                        actual_number_of_points += 1
+                else:
+                    start_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[arcs[item_name]['start']]))
+                    end_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[arcs[item_name]['end']]))
+                    center_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(arcs[item_name]['centre']))
+                    start_angle = kine_dll.heading_on_the_great_circle_origin(center_point, start_point)
+                    end_angle = kine_dll.heading_on_the_great_circle_origin(center_point, end_point)
+
         if max_number_of_points < polygonData[i].number_of_points:
             max_number_of_points = polygonData[i].number_of_points
     pointDefinition.max_polygon_number = MAX_NB_OF_VOLUMIC_POLYGONS - 1
@@ -119,6 +138,7 @@ def prepare_polygons(fdp_vol):
     ps = fdp_vol.fdp_vol['POINTS']
     number_of_polygons = len(fdp_vol.map_vol)
     max_number_of_points = 0
+    arcs = fdp_vol.fdp_vol['ARCS']
     for i in range(number_of_polygons):
         vol = fdp_vol.fdp_vol['VOLUME'][fdp_vol.map_vol[i]]
         polygonData[i].floor = convert_metres_2_feet(vol['floor'])
@@ -129,8 +149,70 @@ def prepare_polygons(fdp_vol):
         polygonData[i].ceiling_plane = kine_dll.define_altitude_plane(get_plane_definition(polygonData[i].ceiling.value))
         #polygonData[i].floor_plane = kine_dll.define_altitude_plane(get_plane_definition(-99999.9))
         #polygonData[i].ceiling_plane = kine_dll.define_altitude_plane(get_plane_definition(-99999.9))
+        actual_number_of_points = 0
         for p_cnt in range(polygonData[i].number_of_points):
-            polygonPoints[i][p_cnt] = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[vol['point_list'][p_cnt]]))
+            item_name = vol['point_list'][p_cnt]
+            if item_name in ps:
+                polygonPoints[i][actual_number_of_points] = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[vol['point_list'][p_cnt]]))
+                actual_number_of_points += 1
+            elif item_name in arcs:
+                if 'point_list' not in arcs[item_name]:
+                    arcs[item_name]['point_list'] = []
+                    start_point = GeographicCoordinateT(
+                        *common.parse_tools.parse_lat_long(ps[arcs[item_name]['start']]))
+                    end_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[arcs[item_name]['end']]))
+                    center_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(arcs[item_name]['centre']))
+                    start_angle, ret = kine_dll.heading_on_the_great_circle_origin(center_point, start_point)
+                    end_angle, ret = kine_dll.heading_on_the_great_circle_origin(center_point, end_point)
+                    angle_diff = end_angle.value - start_angle.value
+                    while angle_diff < 0.0:
+                        angle_diff += 360.0
+                    start_dis, ret = kine_dll.distance_on_the_great_circle(
+                        kine_dll.geo_2_stereo_coordinates(center_point),
+                        kine_dll.geo_2_stereo_coordinates(start_point),
+                        AltitudeT(0.0)
+                    )
+                    end_dis, ret = kine_dll.distance_on_the_great_circle(
+                        kine_dll.geo_2_stereo_coordinates(center_point),
+                        kine_dll.geo_2_stereo_coordinates(end_point),
+                        AltitudeT(0.0)
+                    )
+                    mean_radius = (start_dis.value + end_dis.value) / 2.0
+                    if math.fabs(angle_diff) < TENTH_DEGREES_TO_DEGREES * 0.1 and arcs[item_name
+                    ]['precision'] in accuracy  or arcs[item_name]['precision'].isdigit():
+                        angle_diff = 360.0
+                    #if arcs[item_name]['precision'] in accuracy and angle_diff > 0:
+                    if 1:
+                        angle_inc = 2.0 * math.degrees(math.acos((mean_radius - accuracy[arcs[item_name]['precision']])
+                                                     /(mean_radius + accuracy[arcs[item_name]['precision']])))
+                        nbr_of_intmed = int(angle_diff / angle_inc - 0.001) + 1
+                        angle_inc = angle_diff / (nbr_of_intmed + 1)
+                        if angle_inc > 0 and angle_inc < 90:
+                            radius = mean_radius * (1.0 + (1.0 - math.cos(math.radians(angle_inc)/2.0))
+                                                          /(1.0 + math.cos(math.radians(angle_inc)/2.0)))
+                        else:
+                            radius = mean_radius
+                        print("ARCS: %s, start: %s, end: %s" % (item_name, start_point, end_point))
+                        for arc_i in range(nbr_of_intmed):
+                            cur_angle = start_angle.value + (arc_i + 1) * angle_inc
+                            #while cur_angle > 360.0:
+                            #    cur_angle -= 360.0
+                            next_pt, ret = kine_dll.point_on_the_great_circle_from_heading(
+                                center_point,
+                                cur_angle,
+                                radius,
+                                AltitudeT(0.0)
+                            )
+                            arcs[item_name]['point_list'].append(next_pt)
+                            print("others: [%s] %s" % (arc_i, next_pt))
+                to_insert_list = arcs[item_name]['point_list']
+                if vol['point_list'][p_cnt-1] != arcs[item_name]['start']:
+                    to_insert_list = arcs[item_name]['point_list'][::-1]
+                for p in to_insert_list:
+                    polygonPoints[i][actual_number_of_points] = p
+                    actual_number_of_points += 1
+
+        polygonData[i].number_of_points = actual_number_of_points
         if max_number_of_points < polygonData[i].number_of_points:
             max_number_of_points = polygonData[i].number_of_points
         #pprint.pprint(vol)
@@ -213,7 +295,11 @@ def find_out_volume_containing_point(coordinate, feet=0.0): # xxxNxxxE, feet
     if ret or not found:
         print("found=%s, ret=%s" % (found, ConvResultT[ret]))
         return "%s: %s" % ('find_out_volume_containing_point', ConvResultT[ret])
-    print("found=%s, polygon_number=%s, name=%s, ret=%s\n\n" % (found, polygon_number, fv.map_vol[polygon_number.value], ConvResultT[ret]))
+    print("found=%s, polygon_number=%s, vol name=%s, sec name=%s, ret=%s\n\n" % (found,
+                                                                    polygon_number,
+                                                                    fv.map_vol[polygon_number.value],
+                                                                    fv.vol_in_sec_fir[fv.map_vol[polygon_number.value]],
+                                                                    ConvResultT[ret]))
     return ''
 
 def find_all_volume_containing_point(coordinate, feet=0.0): # xxxNxxxE, feet
