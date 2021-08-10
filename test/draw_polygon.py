@@ -62,7 +62,7 @@ def readPoly(fileName):
   fd.close()
   return polyx, polyy
 
-def Daw1Poly(name, polyx, polyy):
+def Daw1Poly(name, polyx, polyy, pnames=None):
   plt.figure(1)
   plt.title(name)
   plt.xlabel('x')
@@ -70,6 +70,9 @@ def Daw1Poly(name, polyx, polyy):
   plt.axis([min(polyx), max(polyx), min(polyy), max(polyy)])
   plt.grid(True)
   plt.plot(polyx, polyy, 'g-', label=name)
+  if pnames:
+    for i, pn in enumerate(pnames):
+        plt.annotate(pn, xytext=(polyx[i], polyy[i]), xy=(polyx[i], polyy[i]))
   plt.show()
 
 def mymin(listl):
@@ -130,18 +133,20 @@ if __name__ == "__main__":
       init_earth(sc)
       init_centre(sc)
       cur_vol = 'V1G'
+      use_geo = False
       ptss = fv.fdp_vol['VOLUME'][cur_vol]['point_list']
       ptss2 = []
       for p in ptss:
           print("%s: %s" % (p, fv.fdp_vol['POINTS'][p]))
-          x, y = common.parse_tools.parse_lat_long(fv.fdp_vol['POINTS'][p])
-          polyxs.append(x)
-          polyys.append(y)
-          #stg = kine_dll.geo_2_stereo_coordinates(
-          #    GeographicCoordinateT(*common.parse_tools.parse_lat_long(fv.fdp_vol['POINTS'][p])))
-          #polyxs.append(stg.x)
-          #polyys.append(stg.y)
-          #ptss2.append([stg.x + 10, stg.y + 40])
+          if use_geo:
+              x, y = common.parse_tools.parse_lat_long(fv.fdp_vol['POINTS'][p])
+              polyxs.append(x)
+              polyys.append(y)
+          else:
+              stg = kine_dll.geo_2_stereo_coordinates(
+                  GeographicCoordinateT(*common.parse_tools.parse_lat_long(fv.fdp_vol['POINTS'][p])))
+              polyxs.append(stg.x)
+              polyys.append(stg.y)
       print(polyxs)
       print(polyys)
-      Daw1Poly(cur_vol, polyxs, polyys)
+      Daw1Poly(cur_vol, polyxs, polyys, ptss)
