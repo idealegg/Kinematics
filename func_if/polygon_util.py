@@ -47,88 +47,6 @@ def init_centre(sys_centre):
     ret = kine_dll.center_definiton(center)
     print("init_centre: ret=%s" % ret)
 
-def prepare_polygons_old(fdp_vol):
-    global polygonData
-    global polygonPoints
-    global pointDefinition
-    global preparedPolygons
-    global ppd_buffer
-    global gc_buffer
-    global segt_buffer
-    global segt_pro_buffer
-    ps = fdp_vol.fdp_vol['POINTS']
-    arcs = fdp_vol.fdp_vol['ARCS']
-    number_of_polygons = len(fdp_vol.map_vol)
-    max_number_of_points = 0
-    for i in range(number_of_polygons):
-        vol = fdp_vol.fdp_vol['VOLUME'][fdp_vol.map_vol[i]]
-        pprint.pprint(vol)
-        polygonData[i].floor = convert_metres_2_feet(vol['floor'])
-        polygonData[i].ceiling = convert_metres_2_feet(vol['ceiling'])
-        polygonData[i].polygon_number = i
-        polygonData[i].number_of_points = len(vol['point_list'])
-        polygonData[i].floor_plane = kine_dll.define_altitude_plane(get_plane_definition(polygonData[i].floor.value))
-        polygonData[i].ceiling_plane = kine_dll.define_altitude_plane(get_plane_definition(polygonData[i].ceiling.value))
-        actual_number_of_points = 0
-        for p_cnt in range(polygonData[i].number_of_points):
-            item_name = vol['point_list'][p_cnt]
-            if item_name in ps:
-                polygonPoints[i][actual_number_of_points] = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[item_name]))
-                actual_number_of_points += 1
-            elif item_name in arcs:
-                if 'point_list' in arcs[item_name]:
-                    for p in arcs[item_name]['point_list']:
-                        polygonPoints[i][actual_number_of_points] = p
-                        actual_number_of_points += 1
-                else:
-                    start_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[arcs[item_name]['start']]))
-                    end_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[arcs[item_name]['end']]))
-                    center_point = GeographicCoordinateT(*common.parse_tools.parse_lat_long(arcs[item_name]['centre']))
-                    start_angle = kine_dll.heading_on_the_great_circle_origin(center_point, start_point)
-                    end_angle = kine_dll.heading_on_the_great_circle_origin(center_point, end_point)
-
-        if max_number_of_points < polygonData[i].number_of_points:
-            max_number_of_points = polygonData[i].number_of_points
-    pointDefinition.max_polygon_number = MAX_NB_OF_VOLUMIC_POLYGONS - 1
-    pointDefinition.max_point_number = MAX_NB_OF_POINTS_IN_VOLUMIC_POLYGON - 1
-    pointDefinition.offset_to_data = PolygonAddressOffsetT(addressof(polygonData) - addressof(pointDefinition))
-    pointDefinition.offset_to_points = PolygonAddressOffsetT(addressof(polygonPoints) - addressof(pointDefinition))
-    # Polygon numbers start from 0 so the maximum polygon number is the number of polygons - 1
-    preparedPolygons.max_polygon_number = number_of_polygons - 1
-    preparedPolygons.max_point_number = max_number_of_points - 1
-    tmp_buffer = create_string_buffer(sizeof(PreparedPolygonDataT) * number_of_polygons)
-    ppd_buffer_address = addressof(tmp_buffer)
-    ppd_buffer = POINTER(PreparedPolygonDataT)(tmp_buffer)
-    tmp_buffer = create_string_buffer(sizeof(GeographicCoordinateT) * max_number_of_points)
-    gc_buffer_address = addressof(tmp_buffer)
-    gc_buffer = POINTER(GeographicCoordinateT)(tmp_buffer)
-    tmp_buffer = create_string_buffer(sizeof(c_int) * number_of_polygons * max_number_of_points)
-    segt_buffer_address = addressof(tmp_buffer)
-    segt_buffer = POINTER(c_int)(tmp_buffer)
-    tmp_buffer = create_string_buffer(sizeof(c_int) * number_of_polygons * max_number_of_points)
-    segt_pro_buffer_address = addressof(tmp_buffer)
-    segt_pro_buffer = POINTER(c_int)(tmp_buffer)
-    preparedPolygons.offset_to_data = PolygonAddressOffsetT(ppd_buffer_address - addressof(preparedPolygons))
-    preparedPolygons.offset_to_points = PolygonAddressOffsetT(gc_buffer_address - addressof(preparedPolygons))
-    preparedPolygons.offset_to_segments = PolygonAddressOffsetT(segt_buffer_address - addressof(preparedPolygons))
-    preparedPolygons.offset_to_segments_processed = PolygonAddressOffsetT(segt_pro_buffer_address - addressof(preparedPolygons))
-    validation_result, polygon_with_error, segment_with_error, segment_that_crosses, ret = kine_dll.prepare_polygonic_volumes(
-                                       c_int(1),
-                                       c_int(number_of_polygons),
-                                       pointer(pointDefinition),
-                                       pointer(preparedPolygons)
-                                       )
-    print("ppd_buffer: %x, gc_buffer: %x, segt_buffer: %x, segt_pro_buffer: %x" % (
-        addressof(ppd_buffer), addressof(gc_buffer), addressof(segt_buffer), addressof(segt_pro_buffer)))
-    print(pointDefinition)
-    print(preparedPolygons)
-    print(polygonData)
-    print(pointDefinition)
-    print("prepare_polygons:")
-    print("validation_result=%s, polygon_with_error=%s, segment_with_error=%s, segment_that_crosses=%s, ret=%s" % (
-        T_PolygonPreparationResults[validation_result], polygon_with_error, segment_with_error, segment_that_crosses, ConvResultT[ret]
-    ))
-
 def prepare_polygons(fdp_vol):
     global polygonData
     global polygonPoints
@@ -141,8 +59,8 @@ def prepare_polygons(fdp_vol):
     arcs = fdp_vol.fdp_vol['ARCS']
     for i in range(number_of_polygons):
         vol = fdp_vol.fdp_vol['VOLUME'][fdp_vol.map_vol[i]]
-        polygonData[i].floor = convert_metres_2_feet(vol['floor'])
-        polygonData[i].ceiling = convert_metres_2_feet(vol['ceiling'])
+        polygonData[i].floor = convert_metres_2_feet(vol['floor'])+1
+        polygonData[i].ceiling = convert_metres_2_feet(vol['ceiling'])+1
         polygonData[i].polygon_number = i
         polygonData[i].number_of_points = len(vol['point_list']) - 1
         polygonData[i].floor_plane = kine_dll.define_altitude_plane(get_plane_definition(polygonData[i].floor.value))
@@ -153,6 +71,9 @@ def prepare_polygons(fdp_vol):
         for p_cnt in range(polygonData[i].number_of_points):
             item_name = vol['point_list'][p_cnt]
             if item_name in ps:
+                #print("i: %s" % i)
+                #print(actual_number_of_points)
+                #print(ps[vol['point_list'][p_cnt]])
                 polygonPoints[i][actual_number_of_points] = GeographicCoordinateT(*common.parse_tools.parse_lat_long(ps[vol['point_list'][p_cnt]]))
                 actual_number_of_points += 1
             elif item_name in arcs:
@@ -192,7 +113,7 @@ def prepare_polygons(fdp_vol):
                                                           /(1.0 + math.cos(math.radians(angle_inc)/2.0)))
                         else:
                             radius = mean_radius
-                        print("ARCS: %s, start: %s, end: %s" % (item_name, start_point, end_point))
+                        #print("ARCS: %s, start: %s, end: %s" % (item_name, start_point, end_point))
                         for arc_i in range(nbr_of_intmed):
                             cur_angle = start_angle.value + (arc_i + 1) * angle_inc
                             #while cur_angle > 360.0:
@@ -204,7 +125,7 @@ def prepare_polygons(fdp_vol):
                                 AltitudeT(0.0)
                             )
                             arcs[item_name]['point_list'].append(next_pt)
-                            print("others: [%s] %s" % (arc_i, next_pt))
+                            #print("others: [%s] %s" % (arc_i, next_pt))
                 to_insert_list = arcs[item_name]['point_list']
                 if vol['point_list'][p_cnt-1] != arcs[item_name]['start']:
                     to_insert_list = arcs[item_name]['point_list'][::-1]
@@ -303,7 +224,12 @@ def find_out_volume_containing_point(coordinate, feet=0.0): # xxxNxxxE, feet
     return ''
 
 def find_all_volume_containing_point(coordinate, feet=0.0): # xxxNxxxE, feet
-    p = GeographicCoordinateT(*common.parse_tools.parse_lat_long(coordinate))
+    if isinstance(coordinate, (list, tuple, set)):
+        p = GeographicCoordinateT(*coordinate)
+    elif isinstance(coordinate, GeographicCoordinateT):
+        p = coordinate
+    else:
+        p = GeographicCoordinateT(*common.parse_tools.parse_lat_long(coordinate))
     print("coordinate: %s, feet: %s, p: (%s, %s)\n" % (coordinate, feet, p.latitude, p.longitude ))
     alt = AltitudeT(feet)
     polygons, ret = kine_dll.address_of_polygons(polygonSetID)
@@ -317,7 +243,11 @@ def find_all_volume_containing_point(coordinate, feet=0.0): # xxxNxxxE, feet
     if ret or not num_found:
         return "%s: %s" % ('find_all_volume_containing_point', ConvResultT[ret])
     for num in range(num_found.value):
-        print("num[%s]: polygon_num [%s], name [%s]\n\n" % (num, polygon_numbers[num], fv.map_vol[polygon_numbers[num]]))
+        print("num[%s]: polygon_num [%s], vol name=%s, sec name=%s\n\n" % (num,
+                                                                           polygon_numbers[num],
+                                                                           fv.map_vol[polygon_numbers[num]],
+                                                                           fv.vol_in_sec_fir[
+                                                                               fv.map_vol[polygon_numbers[num]]]))
     return ''
 
 def compute_polygonic_volume_exit_point(trajectory, polygon_num=0):
@@ -332,6 +262,11 @@ def compute_polygonic_volume_exit_point(trajectory, polygon_num=0):
     if ret:
         return "%s: %s" % ('compute_polygonic_volume_exit_point', ConvResultT[ret])
     print(exit_intersection)
+    num = exit_intersection.polygon_number
+    print("polygon_num [%s], vol name=%s, sec name=%s\n\n" % (num,
+                                                                           fv.map_vol[num],
+                                                                           fv.vol_in_sec_fir[
+                                                                               fv.map_vol[num]]))
     return ''
 
 def distance_on_the_great_circle(self, point_origin, point_dest):

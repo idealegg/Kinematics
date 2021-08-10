@@ -14,10 +14,10 @@ colors = (
 
 
 
-def parse_lat_long(long, lat=''):
+def parse_lat_long(lat, long=''):
     '''350000N1240000E'''
-    t_long = 0
-    t_lat = 0
+    t_long = long
+    t_lat = lat
     p1 = re.compile("(\d{2,3})(\d{2})((\d{2})?)([NSEW])")
     for s in [long, lat]:
         ress = re.findall(p1, s)

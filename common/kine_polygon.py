@@ -98,8 +98,8 @@ class PolygonDataT(KineStructure):
 
 PolygonDataArrayT = PolygonDataT * MAX_NB_OF_VOLUMIC_POLYGONS
 
-GeographicCoordinateArrayT = GeographicCoordinateT * MAX_NB_OF_VOLUMIC_POLYGONS
-GeographicCoordinateArrayTT = GeographicCoordinateArrayT * MAX_NB_OF_POINTS_IN_VOLUMIC_POLYGON
+GeographicCoordinateArrayT = GeographicCoordinateT * MAX_NB_OF_POINTS_IN_VOLUMIC_POLYGON
+GeographicCoordinateArrayTT = GeographicCoordinateArrayT * MAX_NB_OF_VOLUMIC_POLYGONS
 
 # Three unique geodesic positions are required to define a 3D plane
 class PlaneDefinitionT(KineStructure):

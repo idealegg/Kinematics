@@ -58,16 +58,16 @@ class FdpVolume(object):
               self.fdp_vol['LAYER'][res.group(1)]['min'] = last_layer
               last_layer = self.fdp_vol['LAYER'][res.group(1)]['max']
           elif cur_title == "VOLUME":
-            res = re.search("^(\w+)\s*\|\s*([\w-]+)\s*\|\s*([\w\s]+)", line)
+            res = re.search("^(\w+)\s*\|\s*(\d+(\s*-\s*\d+)?)\s*\|\s*([\w\s]+)", line)
             if res:
               cur_vol = res.group(1)
               self.fdp_vol['VOLUME'][cur_vol] = {}
-              self.fdp_vol['VOLUME'][cur_vol]['layer'] = res.group(2).lstrip('0')
+              self.fdp_vol['VOLUME'][cur_vol]['layer'] = re.sub("\s+", '', res.group(2).lstrip('0'))
               self.fdp_vol['VOLUME'][cur_vol]['floor'], self.fdp_vol['VOLUME'][cur_vol]['ceiling'] = common.parse_tools.get_level(
                   self.fdp_vol['VOLUME'][cur_vol]['layer'],
                   self.fdp_vol
               )
-              self.fdp_vol['VOLUME'][cur_vol]['points'] = res.group(3)
+              self.fdp_vol['VOLUME'][cur_vol]['points'] = res.group(4)
               self.fdp_vol['VOLUME'][cur_vol]['point_list'] = re.findall("\w+", self.fdp_vol['VOLUME'][cur_vol]['points'])
             else:
               res = re.search("^\s*\|\s*\|\s*([\w\s]+)", line)
